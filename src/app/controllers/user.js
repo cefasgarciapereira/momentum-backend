@@ -42,7 +42,11 @@ router.post('/login', async (req, res) => {
 });
 
 router.get('/auth', (req, res) => {
-    res.send('OK');
+    res.send('Autenticado');
+})
+
+router.get('/test', (req,res) => {
+    res.send('Tudo certo!')
 })
 
 function generateToken(params = {}){
