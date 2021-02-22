@@ -9,5 +9,6 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 
 require('./app/controllers/user')(app);
+require('./app/controllers/strategy')(app);
 
 app.listen(process.env.PORT)
