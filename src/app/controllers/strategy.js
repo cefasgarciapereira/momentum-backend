@@ -6,14 +6,35 @@ const authMiddleware = require('../middlewares/auth');
 
 const router = express.Router();
 
-router.use('/auth', authMiddleware);
+router.use('/', authMiddleware);
 
-router.get('/auth',  async (req, res) => {
+router.get('/',  async (req, res) => {
     try{
         const strategies = await Strategy.find().sort({date: 'desc'});
-        res.status(200).send({ strategies })
+       return res.status(200).send({ strategies })
     }catch(error){
         return res.status(400).send({error: 'Falha ao buscar estratégias: '+error})
+    }
+})
+
+router.get('/search', async (req, res) => {
+    const {type, look_back, port_size } = req.body;
+    let query = {}
+
+    if(type) 
+        query = {...query, type: type}
+    
+    if(look_back)
+        query = {...query, look_back: look_back}
+    
+    if(port_size)
+        query = {...query, port_size: port_size}
+
+    try{
+        const strategy = await Strategy.findOne(query)
+        return res.status(200).send({strategy})
+    }catch(error){
+        return res.status(400).send({error: 'Falha ao buscar estratégia: '+error})
     }
 })
 
