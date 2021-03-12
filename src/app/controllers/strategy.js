@@ -18,17 +18,17 @@ router.get('/',  async (req, res) => {
 })
 
 router.get('/search', async (req, res) => {
-    const {type, look_back, port_size } = req.body;
+    const {type, look_back, port_size } = req.query;
     let query = {}
 
     if(type) 
         query = {...query, type: type}
     
     if(look_back)
-        query = {...query, look_back: look_back}
+        query = {...query, look_back: parseInt(look_back)}
     
     if(port_size)
-        query = {...query, port_size: port_size}
+        query = {...query, port_size: parseInt(port_size)}
 
     try{
         const strategy = await Strategy.findOne(query)
