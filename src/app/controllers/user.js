@@ -7,7 +7,7 @@ const authMiddleware = require('../middlewares/auth');
 
 const router = express.Router();
 
-router.use('/auth', authMiddleware);
+router.use('/', authMiddleware);
 
 router.post('/', async (req, res) => {
     const {email} = req.body;
@@ -16,41 +16,54 @@ router.post('/', async (req, res) => {
         if(await User.findOne({email}))
             return res.status(400).send({error: 'Email já cadastrado.'});
             
-        const user = await User.create(req.body);
-        return res.send({user, token: generateToken({id: user.id})}); 
+        const user = await User.create({...req.body, logged: true});
+        return res.send({user, token: generateToken({user: user})}); 
     }catch(error){
         return res.status(400).send({error: `Falha no cadastro: ${error.message}`});
     }
 });
 
 router.post('/login', async (req, res) => {
-    const {email, password} = req.body;
+    const { email, password } = req.body;
+
     try{
-        const user = await User.findOne({email}).select('+password');
+        let user = await User.findOne({email}).select('+password');
 
         if(!user)
             return res.status(400).send({error: 'Usuário não encontrado.'});
         
         if(!await bcrypt.compare(password, user.password))
             return res.status(400).send({error: 'Senha incorreta.'});
-
+        
+        if(user && user.logged)
+            return res.status(400).send({error: 'Múltiplos logins não são permitidos. Finalize sua sessão em outros dispositivos.'})
+        
+        await User.findByIdAndUpdate(user._id, {
+            logged: true
+        })
         user.password = undefined;
-        res.send({user, token: generateToken({id: user.id})});
+        user.logged = true;
+        res.send({user, token: generateToken({user: user})});
     }catch(error){
         return res.status(400).send({error: error});
     }
 });
 
-router.get('/auth', (req, res) => {
-    res.send('Autenticado');
-})
+router.post('/logout', async (req, res) => {
+    const { id } = req.body;
 
-router.get('/test', (req,res) => {
-    res.send('Tudo certo!')
+    try{
+        const user = await User.findByIdAndUpdate(id, {
+            logged: false
+        });
+        res.send({success: true});
+    }catch(error){
+        return res.status(400).send({error: error});
+    }
 })
 
 function generateToken(params = {}){
-    return jwt.sign(params,authConfig.secret,{
+    return jwt.sign(params, authConfig.secret,{
         expiresIn: 86400,
     });
 }

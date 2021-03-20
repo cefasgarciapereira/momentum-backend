@@ -3,6 +3,10 @@ const authConfig = require('../../config/auth.json');
 
 module.exports = (req,res,next) => {
     const authHeader = req.headers.authorization;
+    const nonSecurePaths = ['/login']
+    
+    if (nonSecurePaths.includes(req.path)) 
+        return next();
 
     if(!authHeader)
         return res.status(401).send({error: 'Nenhum token fornecido.'});
