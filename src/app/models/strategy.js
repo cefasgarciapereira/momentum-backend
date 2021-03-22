@@ -18,12 +18,10 @@ const StrategySchema = new mongoose.Schema({
         type: Array
     },
     date:{
-        type: Date,
-        default: Date.now,
+        type: String,
     },
     hour:{
-        type: Date,
-        default: Date.now
+        type: String,
     }
 },{collection: 'strategies_records'});
 

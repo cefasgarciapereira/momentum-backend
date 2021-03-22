@@ -18,7 +18,7 @@ router.get('/',  async (req, res) => {
 })
 
 router.get('/search', async (req, res) => {
-    const {type, look_back, port_size } = req.query;
+    const {type, universe, look_back, port_size } = req.query;
     let query = {}
 
     if(type) 
@@ -29,9 +29,12 @@ router.get('/search', async (req, res) => {
     
     if(port_size)
         query = {...query, port_size: parseInt(port_size)}
-
+    
+    if(universe)
+        query = {...query, universe: universe}
+    
     try{
-        const strategy = await Strategy.findOne(query)
+        const strategy = await Strategy.findOne(query).sort({ date: 'desc' })
         return res.status(200).send({strategy})
     }catch(error){
         return res.status(400).send({error: 'Falha ao buscar estratégia: '+error})
