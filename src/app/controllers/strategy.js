@@ -10,7 +10,16 @@ router.use('/', authMiddleware);
 
 router.get('/',  async (req, res) => {
     try{
-        const strategies = await Strategy.find().sort({date: 'desc'});
+        const strategies = await Strategy.find().sort({datetime: 'desc'});
+       return res.status(200).send({ strategies })
+    }catch(error){
+        return res.status(400).send({error: 'Falha ao buscar estratégias: '+error})
+    }
+})
+
+router.get('/latest',  async (req, res) => {
+    try{
+        const strategies = await Strategy.findOne().sort({datetime: 'desc'});
        return res.status(200).send({ strategies })
     }catch(error){
         return res.status(400).send({error: 'Falha ao buscar estratégias: '+error})
@@ -34,7 +43,7 @@ router.get('/search', async (req, res) => {
         query = {...query, universe: universe}
     
     try{
-        const strategy = await Strategy.findOne(query).sort({ date: 'desc' })
+        const strategy = await Strategy.findOne(query).sort({ datetime: 'desc' })
         return res.status(200).send({strategy})
     }catch(error){
         return res.status(400).send({error: 'Falha ao buscar estratégia: '+error})

@@ -1,6 +1,6 @@
 const mongoose = require('../../database');
 
-const StrategySchema = new mongoose.Schema({
+const BacktestSchema = new mongoose.Schema({
     universe: {
         type: String,
         required: true,
@@ -14,19 +14,16 @@ const StrategySchema = new mongoose.Schema({
     portSize:{
         type: Number
     },
-    response:{
+    ind:{
         type: Array
     },
-    date:{
-        type: String,
+    stats:{
+        type: Array,
     },
     datetime:{
         type: Date
-    },
-    hour:{
-        type: String,
     }
-},{collection: 'strategies_records_v2'});
+},{collection: 'backtest'});
 
-const Strategy = mongoose.model('Strategy', StrategySchema);
-module.exports = Strategy;
+const Backtest = mongoose.model('Backtest', BacktestSchema);
+module.exports = Backtest;

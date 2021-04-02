@@ -17,10 +17,10 @@ const UserSchema = new mongoose.Schema({
         required: true,
         select: false
     },
-    logged:{
-        type: Boolean,
+    session_id:{
+        type: String,
         required: true,
-        default: false
+        default: ''
     },
     createdAt:{
         type: Date,

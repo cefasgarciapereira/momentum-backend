@@ -10,62 +10,91 @@ const router = express.Router();
 router.use('/', authMiddleware);
 
 router.post('/', async (req, res) => {
-    const {email} = req.body;
+    const { email } = req.body;
 
-    try{
-        if(await User.findOne({email}))
-            return res.status(400).send({error: 'Email já cadastrado.'});
-            
-        const user = await User.create({...req.body, logged: true});
-        return res.send({user, token: generateToken({user: user})}); 
-    }catch(error){
-        return res.status(400).send({error: `Falha no cadastro: ${error.message}`});
+    try {
+        if (await User.findOne({ email }))
+            return res.status(400).send({ error: 'Email já cadastrado.' });
+
+        const user = await User.create({ ...req.body, logged: true });
+        return res.send({ user, token: generateToken({ user: user }) });
+    } catch (error) {
+        return res.status(400).send({ error: `Falha no cadastro: ${error.message}` });
     }
 });
 
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
-    try{
-        let user = await User.findOne({email}).select('+password');
+    try {
+        let user = await User.findOne({ email }).select('+password');
 
-        if(!user)
-            return res.status(400).send({error: 'Usuário não encontrado.'});
-        
-        if(!await bcrypt.compare(password, user.password))
-            return res.status(400).send({error: 'Senha incorreta.'});
-        
-        if(user && user.logged)
-            return res.status(400).send({error: 'Múltiplos logins não são permitidos. Finalize sua sessão em outros dispositivos.'})
-        
+        if (!user)
+            return res.status(400).send({ error: 'Usuário não encontrado.' });
+
+        if (!await bcrypt.compare(password, user.password))
+            return res.status(400).send({ error: 'Senha incorreta.' });
+
+        const session_id = bcrypt.genSaltSync(10);
+
         await User.findByIdAndUpdate(user._id, {
-            logged: true
+            session_id: session_id
         })
+
         user.password = undefined;
-        user.logged = true;
-        res.send({user, token: generateToken({user: user})});
-    }catch(error){
-        return res.status(400).send({error: error});
+        user.session_id = session_id;
+        res.send({
+            user,
+            token: generateToken({ user: user }),
+            refreshToken: generateRefreshToken({ user: user })
+        });
+    } catch (error) {
+        return res.status(400).send({ error: error });
     }
 });
 
-router.post('/logout', async (req, res) => {
-    const { id } = req.body;
+router.post('/isAuthenticated', async (req, res) => {
+    const { user } = req.body
 
-    try{
-        const user = await User.findByIdAndUpdate(id, {
-            logged: false
-        });
-        res.send({success: true});
-    }catch(error){
-        return res.status(400).send({error: error});
+    try {
+        const db_user = await User.findById(user._id)
+
+        if(user.session_id != db_user.session_id){
+            return res.status(403).send({ error: 'Múltiplos logins não são permitidos.' })
+        }
+
+        res.send({ data: true })
+    } catch (error) {
+        return res.status(400).send({ error: error })
     }
 })
 
-function generateToken(params = {}){
-    return jwt.sign(params, authConfig.secret,{
+router.post('/refreshToken', async (req, res) => {
+    const { user } = req.body;
+    const { refreshToken } = user;
+
+    try {
+        jwt.verify(refreshToken, authConfig.refresh, (err, decoded) => {
+            if (err) return res.status(401).send({ error: 'Token inválido' });
+
+            res.send({
+                token: generateToken({ user: user }),
+                refreshToken: generateRefreshToken({ user: user })
+            });
+        });
+    } catch (error) {
+        return res.status(400).send({ error: error })
+    }
+})
+
+function generateToken(params = {}) {
+    return jwt.sign(params, authConfig.secret, {
         expiresIn: 86400,
     });
+}
+
+function generateRefreshToken(params = {}) {
+    return jwt.sign(params, authConfig.refresh)
 }
 
 module.exports = app => app.use('/user', router);
