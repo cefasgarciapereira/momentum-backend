@@ -22,6 +22,16 @@ const UserSchema = new mongoose.Schema({
         required: true,
         default: ''
     },
+    refresh_token:{
+        type: String,
+        required: true,
+        default: ''
+    },
+    welcome_message:{
+        type: Boolean,
+        required: true,
+        default: true
+    },
     createdAt:{
         type: Date,
         default: Date.now,

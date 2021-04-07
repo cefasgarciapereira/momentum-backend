@@ -16,6 +16,7 @@ app.get('/test', (req, res) => {
 require('./app/controllers/user')(app);
 require('./app/controllers/strategy')(app);
 require('./app/controllers/backtest')(app);
+require('./app/controllers/closeFriends')(app);
 
 app.listen(process.env.PORT || 9000, function(){
   console.log("Express server listening on port %d in %s mode", this.address().port, app.settings.env);

@@ -1,6 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const User = require('../models/user.js');
+const CloseFriends = require('../models/closeFriends.js');
 const jwt = require('jsonwebtoken');
 const authConfig = require('../../config/auth.json');
 const authMiddleware = require('../middlewares/auth');
@@ -9,15 +10,42 @@ const router = express.Router();
 
 router.use('/', authMiddleware);
 
-router.post('/', async (req, res) => {
-    const { email } = req.body;
+router.post('/register', async (req, res) => {
+    const { email, instagram_at } = req.body;
 
     try {
         if (await User.findOne({ email }))
             return res.status(400).send({ error: 'Email já cadastrado.' });
 
-        const user = await User.create({ ...req.body, logged: true });
-        return res.send({ user, token: generateToken({ user: user }) });
+        const closeFriend = await CloseFriends.findOne({ instagram_at })
+
+        if (!instagram_at)
+            return res.status(400).send({ error: 'Perfil de instagram não informado.' });
+
+        if (!closeFriend)
+            return res.status(400).send({ error: 'O perfil de instagram informado não consta na lista de convidados.' });
+
+        if (closeFriend.used)
+            return res.status(400).send({ error: 'Este perfil de instagram já foi utilizado em um outro cadastro.' });
+
+        const session_id = bcrypt.genSaltSync(10);
+
+        await CloseFriends.findOneAndUpdate({ instagram_at: instagram_at }, { used: true })
+
+        const user = await User.create({
+            ...req.body,
+            session_id: session_id,
+            refresh_token: generateRefreshToken({ email: email })
+        });
+
+        return res.send({
+            user, token: generateToken({
+                user,
+                token: generateToken({ user: user }),
+                refreshToken: generateRefreshToken({ user: user })
+
+            })
+        });
     } catch (error) {
         return res.status(400).send({ error: `Falha no cadastro: ${error.message}` });
     }
@@ -46,7 +74,6 @@ router.post('/login', async (req, res) => {
         res.send({
             user,
             token: generateToken({ user: user }),
-            refreshToken: generateRefreshToken({ user: user })
         });
     } catch (error) {
         return res.status(400).send({ error: error });
@@ -59,7 +86,7 @@ router.post('/isAuthenticated', async (req, res) => {
     try {
         const db_user = await User.findById(user._id)
 
-        if(user.session_id != db_user.session_id){
+        if (user.session_id != db_user.session_id) {
             return res.status(403).send({ error: 'Múltiplos logins não são permitidos.' })
         }
 
@@ -82,6 +109,21 @@ router.post('/refreshToken', async (req, res) => {
                 refreshToken: generateRefreshToken({ user: user })
             });
         });
+    } catch (error) {
+        return res.status(400).send({ error: error })
+    }
+})
+
+router.post('/hideMessage', async (req, res) => {
+    const { user } = req.body;
+
+    try {
+        const newUser = await User.findByIdAndUpdate(user._id, {
+            welcome_message: false
+        })
+
+        return res.send({ newUser })
+
     } catch (error) {
         return res.status(400).send({ error: error })
     }
