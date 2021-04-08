@@ -20,4 +20,41 @@ router.post('/', async (req, res) => {
     }
 });
 
+router.post('/multiples', async (req, res) => {
+    // in development!!!
+    const { instagrams } = req.body;
+    let fails = []
+    let inserted = []
+
+    try {
+        await instagrams.forEach(async (instagram_at) => {
+            try {
+                const exists = await CloseFriends.findOne({ instagram_at })
+                if (!exists) {
+                    const created = await CloseFriends.create({ instagram_at });
+                    if (created) {
+                        inserted.push(instagram_at)
+                    } else {
+                        fails.push(instagram_at)
+                    }
+                } else {
+                    fails.push(instagram_at)
+                }
+            } catch (err) {
+                fails.push(instagram_at)
+            }
+        })
+
+        return res.send({
+            fails: fails,
+            inserted: inserted,
+            inserted_count: inserted.length,
+            fails_count: fails.length,
+        });
+
+    } catch (error) {
+        return res.status(400).send({ error: `Falha ao processar os perfis de instagram: ${error.message}` });
+    }
+});
+
 module.exports = app => app.use('/close-friends', router);
