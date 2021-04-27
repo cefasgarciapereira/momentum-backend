@@ -5,6 +5,8 @@ const CloseFriends = require('../models/closeFriends.js');
 const jwt = require('jsonwebtoken');
 const authConfig = require('../../config/auth.json');
 const authMiddleware = require('../middlewares/auth');
+const nodemailer = require('nodemailer');
+const SMTP_CONFIG = require('../../config/smtp')
 
 const router = express.Router();
 
@@ -128,6 +130,41 @@ router.post('/hideMessage', async (req, res) => {
         return res.status(400).send({ error: error })
     }
 })
+
+router.post('/sendemail', async (req, res) => {
+    try {
+        const email = await send()
+
+        return res.send({ success: "Email enviado com sucesso", email: email })
+    } catch (error) {
+        return res.status(400).send({ error: error })
+    }
+})
+
+
+const transporter = nodemailer.createTransport({
+    host: SMTP_CONFIG.host,
+    port: SMTP_CONFIG.port,
+    secure: false,
+    auth: {
+        user: SMTP_CONFIG.user,
+        pass: SMTP_CONFIG.pass
+    },
+    tls: {
+        rejectUnauthorized: false
+    }
+});
+
+async function send() {
+    const mailSent = await transporter.sendMail({
+        text: "Texto de teste do e-mail da easyquant.",
+        subject: "Teste",
+        from: "Easy Quant <easyquantapp.@gmail.com>",
+        to: ['cefasgarciapereira@gmail.com']
+    })
+
+    return mailSent
+}
 
 function generateToken(params = {}) {
     return jwt.sign(params, authConfig.secret, {
