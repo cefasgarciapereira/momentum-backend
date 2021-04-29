@@ -19,7 +19,7 @@ router.get('/',  async (req, res) => {
 
 router.get('/latest',  async (req, res) => {
     try{
-        const strategies = await Strategy.findOne().sort({datetime: 'desc'});
+        const strategies = await Strategy.findOne().sort({datetime: 'desc', limit: 1});
        return res.status(200).send({ strategies })
     }catch(error){
         return res.status(400).send({error: 'Falha ao buscar estratégias: '+error})

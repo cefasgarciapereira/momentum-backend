@@ -131,6 +131,33 @@ router.post('/hideMessage', async (req, res) => {
     }
 })
 
+router.post('/requestNewPassword', async (req, res) => {
+    const { email } = req.body;
+
+    try {
+        let user = await User.findOne({ email })
+
+        if (!user)
+            return res.status(400).send({ error: 'Usuário não encontrado.' });
+
+        const token = generateNewPassToken()
+        const resetURL = `https://www.easyquant.com.br/nova-senha?t=${token}`
+
+        const message = `Olá ${user.name}, você solicitou uma troca de senha. Utilize o link abaixo para resetá-la. \n\n${resetURL}`
+
+        const sentMail = await send({
+            to: user.email,
+            subject: 'Recuperar Senha - Easy Quant',
+            text: message
+        })
+
+        return res.send({ success: "Email enviado com sucesso", email: sentMail })
+
+    } catch (error) {
+        return res.status(400).send({ error: error })
+    }
+})
+
 router.post('/sendemail', async (req, res) => {
     try {
         const email = await send()
@@ -155,12 +182,12 @@ const transporter = nodemailer.createTransport({
     }
 });
 
-async function send() {
+async function send({ to, text, subject }) {
     const mailSent = await transporter.sendMail({
-        text: "Texto de teste do e-mail da easyquant.",
-        subject: "Teste",
+        text: text,
+        subject: subject,
         from: "Easy Quant <easyquantapp.@gmail.com>",
-        to: ['cefasgarciapereira@gmail.com']
+        to: [to]
     })
 
     return mailSent
@@ -174,6 +201,12 @@ function generateToken(params = {}) {
 
 function generateRefreshToken(params = {}) {
     return jwt.sign(params, authConfig.refresh)
+}
+
+function generateNewPassToken(params = {}) {
+    return jwt.sign(params, authConfig.newPass, {
+        expiresIn: 900
+    })
 }
 
 module.exports = app => app.use('/user', router);
