@@ -132,7 +132,7 @@ router.post('/hideMessage', async (req, res) => {
 })
 
 router.post('/requestNewPassword', async (req, res) => {
-    const { email } = req.body;
+    const { email, env } = req.body;
 
     try {
         let user = await User.findOne({ email })
@@ -141,9 +141,11 @@ router.post('/requestNewPassword', async (req, res) => {
             return res.status(400).send({ error: 'Usuário não encontrado.' });
 
         const token = generateNewPassToken()
-        const resetURL = `https://www.easyquant.com.br/nova-senha?t=${token}`
+        const baseUrl = env === 'prod' ? "https://easyquant-api.herokuapp.com" :
+            env === 'homolog' ? "https://homolog-momentum-api.herokuapp.com" : 'http://localhost:3000'
+        const resetURL = `${baseUrl}/nova-senha?token=${token}&email=${email}`
 
-        const message = `Olá ${user.name}, você solicitou uma troca de senha. Utilize o link abaixo para resetá-la. \n\n${resetURL}`
+        const message = `Olá ${user.name.split(' ')[0]}, você solicitou uma troca de senha. Utilize o link abaixo para resetá-la. \n\n${resetURL}`
 
         const sentMail = await send({
             to: user.email,
@@ -158,12 +160,45 @@ router.post('/requestNewPassword', async (req, res) => {
     }
 })
 
+router.post('/resetPassword', async (req, res) => {
+    const { email, token, newPassword } = req.body;
+
+    try {
+        const user = await User.findOne({ email })
+
+        if(!newPassword)
+            return res.status(400).send({ error: 'É necessário informar uma nova senha.' });
+        
+        if (!user)
+            return res.status(400).send({ error: 'Usuário não encontrado.' });
+
+        if (!token)
+            return res.status(401).send({ error: 'Nenhum token fornecido.' });
+
+        jwt.verify(token, authConfig.newPass, (err) => {
+            if (err) return res.status(401).send({ error: 'Token inválido' });
+        });
+
+        const hash = await bcrypt.hash(newPassword, 10);
+
+        await User.findOneAndUpdate({ email }, {
+            password: hash
+        })
+
+        return res.send({ success: "Senha alterada com sucesso" })
+
+    } catch (error) {
+        return res.status(400).send({ error: `Erro inesperado no servidor ${error}` })
+    }
+})
+
 router.post('/sendemail', async (req, res) => {
     try {
         const email = await send()
 
         return res.send({ success: "Email enviado com sucesso", email: email })
     } catch (error) {
+        console.log(error)
         return res.status(400).send({ error: error })
     }
 })
@@ -172,7 +207,7 @@ router.post('/sendemail', async (req, res) => {
 const transporter = nodemailer.createTransport({
     host: SMTP_CONFIG.host,
     port: SMTP_CONFIG.port,
-    secure: false,
+    secure: true,
     auth: {
         user: SMTP_CONFIG.user,
         pass: SMTP_CONFIG.pass
@@ -186,7 +221,7 @@ async function send({ to, text, subject }) {
     const mailSent = await transporter.sendMail({
         text: text,
         subject: subject,
-        from: "Easy Quant <easyquantapp.@gmail.com>",
+        from: "Easy Quant <contato@easyquant.com.br>",
         to: [to]
     })
 
