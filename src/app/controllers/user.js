@@ -141,8 +141,8 @@ router.post('/requestNewPassword', async (req, res) => {
             return res.status(400).send({ error: 'Usuário não encontrado.' });
 
         const token = generateNewPassToken()
-        const baseUrl = env === 'prod' ? "https://easyquant-api.herokuapp.com" :
-            env === 'homolog' ? "https://homolog-momentum-api.herokuapp.com" : 'http://localhost:3000'
+        const baseUrl = env === 'prod' ? "https://www.easyquant.com.br" :
+            env === 'homolog' ? "http://homolog-easyquant.netlify.app/" : 'http://localhost:3000'
         const resetURL = `${baseUrl}/nova-senha?token=${token}&email=${email}`
 
         const message = `Olá ${user.name.split(' ')[0]}, você solicitou uma troca de senha. Utilize o link abaixo para resetá-la. \n\n${resetURL}`
