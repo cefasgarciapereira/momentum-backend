@@ -142,7 +142,7 @@ router.post('/requestNewPassword', async (req, res) => {
 
         const token = generateNewPassToken()
         const baseUrl = env === 'prod' ? "https://www.easyquant.com.br" :
-            env === 'homolog' ? "http://homolog-easyquant.netlify.app/" : 'http://localhost:3000'
+            env === 'homolog' ? "http://homolog-easyquant.netlify.app" : 'http://localhost:3000'
         const resetURL = `${baseUrl}/nova-senha?token=${token}&email=${email}`
 
         const message = `Olá ${user.name.split(' ')[0]}, você solicitou uma troca de senha. Utilize o link abaixo para resetá-la. \n\n${resetURL}`
