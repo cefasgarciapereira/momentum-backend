@@ -6,13 +6,14 @@ const jwt = require('jsonwebtoken');
 const authConfig = require('../../config/auth.json');
 const authMiddleware = require('../middlewares/auth');
 const nodemailer = require('nodemailer');
-const SMTP_CONFIG = require('../../config/smtp')
+const SMTP_CONFIG = require('../../config/smtp');
+const stripe = require('../services/stripe');
 
 const router = express.Router();
 
 router.use('/', authMiddleware);
 
-router.post('/register', async (req, res) => {
+router.post('/registerDeprecated', async (req, res) => {
     const { email, instagram_at } = req.body;
 
     try {
@@ -48,6 +49,100 @@ router.post('/register', async (req, res) => {
 
             })
         });
+    } catch (error) {
+        return res.status(400).send({ error: `Falha no cadastro: ${error.message}` });
+    }
+});
+
+router.post('/register', async (req, res) => {
+    const { email, instagram_at, credit_card, plan_id } = req.body;
+
+
+    try {
+
+        if (await User.findOne({ email }))
+            return res.status(400).send({ error: 'Email já cadastrado.' });
+
+        const closeFriend = await CloseFriends.findOne({ instagram_at })
+        const session_id = bcrypt.genSaltSync(10);
+        const refresh_token = generateRefreshToken({ email: email })
+
+        if (instagram_at) {
+            // se for close friends do Léo
+            if (!closeFriend)
+                return res.status(400).send({ error: 'O perfil de instagram informado não consta na lista de convidados.' });
+
+            if (closeFriend.used)
+                return res.status(400).send({ error: 'Este perfil de instagram já foi utilizado em um outro cadastro.' });
+
+
+            await CloseFriends.findOneAndUpdate({ instagram_at: instagram_at }, { used: true })
+
+            const user = await User.create({
+                ...req.body,
+                session_id: session_id,
+                refresh_token: refresh_token
+            });
+
+            return res.send({
+                user,
+                token: generateToken({
+                    user
+                })
+            });
+
+        } else {
+            //assinante
+
+            //create payment method
+            const paymentMethod = await stripe.paymentMethods.create({
+                type: 'card',
+                card: {
+                    number: credit_card.number,
+                    exp_month: credit_card.exp_month,
+                    exp_year: credit_card.exp_year,
+                    cvc: credit_card.cvc,
+                },
+            });
+
+            //create a costumer
+            const customer = await stripe.customers.create({
+                name: req.body.name,
+                email: req.body.email,
+                payment_method: paymentMethod.id,
+                invoice_settings: {
+                    default_payment_method: paymentMethod.id
+                }
+            });
+
+            //create subscription
+            const subscription = await stripe.subscriptions.create({
+                customer: customer.id,
+                trial_period_days: 15,
+                items: [
+                    { price: plan_id },
+                ],
+            });
+
+            const user = await User.create({
+                ...req.body,
+                session_id: session_id,
+                refresh_token: refresh_token,
+                payment_method_id: paymentMethod.id,
+                customer_id: customer.id,
+                subscription_id: subscription.id
+            });
+
+            return res.send({
+                user,
+                token: generateToken({
+                    user,
+                    customer: customer,
+                    subscription: subscription
+                })
+            });
+        }
+
     } catch (error) {
         return res.status(400).send({ error: `Falha no cadastro: ${error.message}` });
     }
@@ -166,9 +261,9 @@ router.post('/resetPassword', async (req, res) => {
     try {
         const user = await User.findOne({ email })
 
-        if(!newPassword)
+        if (!newPassword)
             return res.status(400).send({ error: 'É necessário informar uma nova senha.' });
-        
+
         if (!user)
             return res.status(400).send({ error: 'Usuário não encontrado.' });
 
@@ -198,7 +293,131 @@ router.post('/sendemail', async (req, res) => {
 
         return res.send({ success: "Email enviado com sucesso", email: email })
     } catch (error) {
-        console.log(error)
+        return res.status(400).send({ error: error })
+    }
+})
+
+router.post('/subscribe', async (req, res) => {
+    const { credit_card } = req.body
+    try {
+        //create payment method
+        const paymentMethod = await stripe.paymentMethods.create({
+            type: 'card',
+            card: {
+                number: credit_card.number,
+                exp_month: credit_card.exp_month,
+                exp_year: credit_card.exp_year,
+                cvc: credit_card.cvc,
+            },
+        });
+
+        //create a costumer
+        const customer = await stripe.customers.create({
+            name: req.body.name,
+            email: req.body.email,
+            payment_method: paymentMethod.id,
+            invoice_settings: {
+                default_payment_method: paymentMethod.id
+            }
+        });
+
+        //create subscription
+        const subscription = await stripe.subscriptions.create({
+            customer: customer.id,
+            trial_period_days: 15,
+            items: [
+                { price: 'price_1In5oRIoqiuDenozaQ0lNzeP' }, // plan id
+            ],
+        });
+
+        return res.send({ subscription })
+    } catch (error) {
+        return res.status(400).send({ error: `Falha na assinatura ${error}` })
+    }
+})
+
+router.post('/cancelSubscription', async (req, res) => {
+    const { subscription_id } = req.body;
+
+    try {
+        const canceled = await stripe.subscriptions.update(
+            subscription_id,
+            {
+                cancel_at_period_end: true
+            });
+
+        return res.send({ canceled })
+    } catch (error) {
+        return res.status(400).send({ error: `Falha ao cancelar assinatura ${error}` })
+    }
+})
+
+router.post('/reactivateSubscription', async (req, res) => {
+    const { subscription_id, plan_id } = req.body;
+
+    try {
+
+        const subscription = await stripe.subscriptions.retrieve(subscription_id);
+
+        const updated_subscription = await stripe.subscriptions.update(
+            subscription_id,
+            {
+                cancel_at_period_end: false,
+                proration_behavior: 'create_prorations',
+                items: [{
+                    id: subscription.items.data[0].id,
+                    price: plan_id,
+                }]
+            });
+
+        return res.send({ updated_subscription })
+
+    } catch (error) {
+        return res.status(400).send({ error: `Falha ao cancelar assinatura ${error}` })
+    }
+})
+
+router.get('/costumer', async (req, res) => {
+    const { subscription_id } = req.body;
+
+    try {
+        const customer = await stripe.customers.retrieve(
+            subscription_id
+        );
+
+        return res.send({ customer })
+    } catch (error) {
+        return res.status(400).send({ error: `Falha ao buscar cliente ${error}` })
+    }
+})
+
+router.get('/subscription', async (req, res) => {
+    try {
+        const subscription = await stripe.subscriptions.retrieve(
+            'sub_JPviOLVPdWbRNE'
+        );
+
+        return res.send({ subscription })
+    } catch (error) {
+        return res.status(400).send({ error: `Falha ao buscar assinatura ${error}` })
+    }
+})
+
+router.post('/stripe', async (req, res) => {
+    try {
+        const plan = await stripe.plans.retrieve(
+            'price_1In4KILYdosYlTSeq3fQoLLy'
+        );
+
+        /*const result = await stripe.paymentIntents.create({
+            amount: 1000,
+            currency: 'brl',
+            payment_method_types: ['card'],
+            receipt_email: 'jenny.rosen@example.com',
+        });*/
+
+        return res.send({ plan })
+    } catch (error) {
         return res.status(400).send({ error: error })
     }
 })
