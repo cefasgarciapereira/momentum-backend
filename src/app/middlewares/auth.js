@@ -3,26 +3,39 @@ const authConfig = require('../../config/auth.json');
 
 module.exports = (req, res, next) => {
     const authHeader = req.headers.authorization;
-    const nonSecurePaths = ['/register','/login', '/logout', '/requestNewPassword', '/resetPassword', '/stripe', '/subscribe', '/costumer', '/subscription']
-    
-    if (nonSecurePaths.includes(req.path)) 
+    const nonSecurePaths = [
+        '/register',
+        '/registerWithCloseFriends',
+        '/registerAndSubscribe',
+        '/login',
+        '/logout',
+        '/requestNewPassword',
+        '/resetPassword',
+        '/stripe',
+        '/subscribe',
+        '/costumer',
+        '/subscription',
+        '/refreshToken'
+    ]
+
+    if (nonSecurePaths.includes(req.path))
         return next();
 
-    if(!authHeader)
-        return res.status(401).send({error: 'Nenhum token fornecido.'});
-    
+    if (!authHeader)
+        return res.status(401).send({ error: 'Nenhum token fornecido.' });
+
     const parts = authHeader.split(' ');
 
-    if(!parts.length === 2)
-        return res.status(401).send({error: 'Token mal formatado.'});
-    
+    if (!parts.length === 2)
+        return res.status(401).send({ error: 'Token mal formatado.' });
+
     const [scheme, token] = parts;
-    
-    if(!/^Bearer$/i.test(scheme))
-        return res.status(401).send({error: 'Token com tipo inválido.'});
-    
+
+    if (!/^Bearer$/i.test(scheme))
+        return res.status(401).send({ error: 'Token com tipo inválido.' });
+
     jwt.verify(token, authConfig.secret, (err, decoded) => {
-        if(err) return res.status(401).send({error: 'Token inválido'});
+        if (err) return res.status(401).send({ error: 'Token inválido' });
 
         req.userId = decoded.id;
         return next();

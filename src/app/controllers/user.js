@@ -13,7 +13,7 @@ const router = express.Router();
 
 router.use('/', authMiddleware);
 
-router.post('/registerDeprecated', async (req, res) => {
+router.post('/registerWithCloseFriends', async (req, res) => {
     const { email, instagram_at } = req.body;
 
     try {
@@ -38,11 +38,12 @@ router.post('/registerDeprecated', async (req, res) => {
         const user = await User.create({
             ...req.body,
             session_id: session_id,
-            refresh_token: generateRefreshToken({ email: email })
+            refresh_token: generateRefreshToken({ email: email }),
+            is_closefriends: true
         });
 
         return res.send({
-            user, token: generateToken({
+            token: generateToken({
                 user,
                 token: generateToken({ user: user }),
                 refreshToken: generateRefreshToken({ user: user })
@@ -54,94 +55,87 @@ router.post('/registerDeprecated', async (req, res) => {
     }
 });
 
-router.post('/register', async (req, res) => {
-    const { email, instagram_at, credit_card, plan_id } = req.body;
-
+router.post('/registerAndSubscribe', async (req, res) => {
+    const {
+        email,
+        name,
+        plan_id,
+        card_name,
+        card_number,
+        card_exp_month,
+        card_exp_year,
+        card_cvc,
+        city,
+        country,
+        line,
+        state,
+        phone,
+        postal_code
+    } = req.body;
 
     try {
-
         if (await User.findOne({ email }))
             return res.status(400).send({ error: 'Email já cadastrado.' });
 
-        const closeFriend = await CloseFriends.findOne({ instagram_at })
         const session_id = bcrypt.genSaltSync(10);
         const refresh_token = generateRefreshToken({ email: email })
 
-        if (instagram_at) {
-            // se for close friends do Léo
-            if (!closeFriend)
-                return res.status(400).send({ error: 'O perfil de instagram informado não consta na lista de convidados.' });
-
-            if (closeFriend.used)
-                return res.status(400).send({ error: 'Este perfil de instagram já foi utilizado em um outro cadastro.' });
-
-
-            await CloseFriends.findOneAndUpdate({ instagram_at: instagram_at }, { used: true })
-
-            const user = await User.create({
-                ...req.body,
-                session_id: session_id,
-                refresh_token: refresh_token
-            });
-
-            return res.send({
-                user,
-                token: generateToken({
-                    user
-                })
-            });
-
-        } else {
-            //assinante
-
-            //create payment method
-            const paymentMethod = await stripe.paymentMethods.create({
-                type: 'card',
-                card: {
-                    number: credit_card.number,
-                    exp_month: credit_card.exp_month,
-                    exp_year: credit_card.exp_year,
-                    cvc: credit_card.cvc,
+        //create payment method
+        const paymentMethod = await stripe.paymentMethods.create({
+            type: 'card',
+            card: {
+                number: card_number,
+                exp_month: card_exp_month,
+                exp_year: card_exp_year,
+                cvc: card_cvc,
+            },
+            billing_details: {
+                address: {
+                    city: city,
+                    country: country,
+                    line1: line,
+                    postal_code: postal_code,
+                    state: state
                 },
-            });
+                email: email,
+                name: card_name,
+                phone: phone
+            },
+        });
 
-            //create a costumer
-            const customer = await stripe.customers.create({
-                name: req.body.name,
-                email: req.body.email,
-                payment_method: paymentMethod.id,
-                invoice_settings: {
-                    default_payment_method: paymentMethod.id
-                }
-            });
+        //create a costumer
+        const customer = await stripe.customers.create({
+            name: name,
+            email: email,
+            payment_method: paymentMethod.id,
+            invoice_settings: {
+                default_payment_method: paymentMethod.id
+            }
+        });
 
-            //create subscription
-            const subscription = await stripe.subscriptions.create({
-                customer: customer.id,
-                trial_period_days: 15,
-                items: [
-                    { price: plan_id },
-                ],
-            });
+        //create subscription
+        const subscription = await stripe.subscriptions.create({
+            customer: customer.id,
+            trial_period_days: 15,
+            items: [
+                { price: plan_id },
+            ],
+        });
+ 
+        user = await User.create({
+            ...req.body,
+            session_id: session_id,
+            refresh_token: refresh_token,
+            payment_method_id: paymentMethod.id,
+            customer_id: customer.id,
+            subscription_id: subscription.id
+        });
 
-            const user = await User.create({
-                ...req.body,
-                session_id: session_id,
-                refresh_token: refresh_token,
-                payment_method_id: paymentMethod.id,
-                customer_id: customer.id,
-                subscription_id: subscription.id
-            });
-
-            return res.send({
-                user,
-                token: generateToken({
-                    user,
-                    customer: customer,
-                    subscription: subscription
-                })
-            });
-        }
+        return res.send({
+            token: generateToken({
+                user
+            })
+        });
 
     } catch (error) {
         return res.status(400).send({ error: `Falha no cadastro: ${error.message}` });
@@ -169,7 +163,6 @@ router.post('/login', async (req, res) => {
         user.password = undefined;
         user.session_id = session_id;
         res.send({
-            user,
             token: generateToken({ user: user }),
         });
     } catch (error) {
@@ -195,15 +188,14 @@ router.post('/isAuthenticated', async (req, res) => {
 
 router.post('/refreshToken', async (req, res) => {
     const { user } = req.body;
-    const { refreshToken } = user;
+    const { refresh_token } = user;
 
     try {
-        jwt.verify(refreshToken, authConfig.refresh, (err, decoded) => {
+        jwt.verify(refresh_token, authConfig.refresh, (err, decoded) => {
             if (err) return res.status(401).send({ error: 'Token inválido' });
 
             res.send({
                 token: generateToken({ user: user }),
-                refreshToken: generateRefreshToken({ user: user })
             });
         });
     } catch (error) {

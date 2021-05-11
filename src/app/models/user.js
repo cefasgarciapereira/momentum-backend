@@ -12,6 +12,10 @@ const UserSchema = new mongoose.Schema({
         required: true,
         lowercase: true
     },
+    is_closefriends: {
+        type: Boolean,
+        default: false
+    },
     subscription_id: {
         type: String,
         default: null
