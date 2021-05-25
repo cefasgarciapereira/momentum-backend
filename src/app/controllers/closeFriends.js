@@ -20,6 +20,24 @@ router.post('/', async (req, res) => {
     }
 });
 
+router.post('/add', async (req, res) => {
+    const { instagram_at, pass } = req.body;
+
+
+    try {
+        if (await CloseFriends.findOne({ instagram_at }))
+            return res.status(400).send({ error: 'Este perfil já foi incluído na lista.' });
+
+        if(pass !== 'W+6{QMD!EdG7=aLj')
+            return res.status(400).send({ error: 'Código Inválido' });
+
+        const friend = await CloseFriends.create({ ...req.body });
+        return res.send({ friend });
+    } catch (error) {
+        return res.status(400).send({ error: `Falha ao incluir close friend: ${error.message}` });
+    }
+});
+
 router.post('/multiples', async (req, res) => {
     // in development!!!
     const { instagrams } = req.body;

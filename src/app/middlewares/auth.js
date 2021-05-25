@@ -3,7 +3,7 @@ const authConfig = require('../../config/auth.json');
 
 module.exports = (req, res, next) => {
     const authHeader = req.headers.authorization;
-    const nonSecurePaths = ['/register','/login', '/logout']
+    const nonSecurePaths = ['/register','/login', '/logout', '/add']
     
     if (nonSecurePaths.includes(req.path)) 
         return next();
