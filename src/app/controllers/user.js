@@ -170,6 +170,48 @@ router.post('/login', async (req, res) => {
     }
 });
 
+router.post('/update', async (req, res) => {
+    const { email, user } = req.body;
+
+    try{
+        await User.findOneAndUpdate({ email }, { ...user })
+        const updatedUser = await User.findOne({ email })
+
+        res.send({
+            token: generateToken({ user: updatedUser }),
+        });
+
+    }catch(error){
+        return res.status(400).send({ error: error });
+    }
+})
+
+router.post('/updatePassword', async (req, res) => {
+    const { email, newPassword } = req.body;
+    
+    try{
+        let user = await User.findOne({ email }).select('+password');
+
+        if (!user)
+            return res.status(400).send({ error: 'Usuário não encontrado.' });
+
+        const hash = await bcrypt.hash(newPassword, 10);
+
+        await User.findOneAndUpdate({ email }, {
+            password: hash
+        })
+
+        const updatedUser = await User.findOne({ email })
+
+        res.send({
+            token: generateToken({ user: updatedUser }),
+        });
+
+    }catch(error){
+        return res.status(400).send({ error: `Erro ao atualizar senhas ${error}` });
+    }
+})
+
 router.post('/isAuthenticated', async (req, res) => {
     const { user } = req.body
 
@@ -266,10 +308,8 @@ router.post('/resetPassword', async (req, res) => {
             if (err) return res.status(401).send({ error: 'Token inválido' });
         });
 
-        const hash = await bcrypt.hash(newPassword, 10);
-
         await User.findOneAndUpdate({ email }, {
-            password: hash
+            password: newPassword
         })
 
         return res.send({ success: "Senha alterada com sucesso" })
