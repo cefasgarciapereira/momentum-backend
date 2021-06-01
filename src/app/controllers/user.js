@@ -88,6 +88,7 @@ router.post('/registerAndSubscribe', async (req, res) => {
                 exp_month: card_exp_month,
                 exp_year: card_exp_year,
                 cvc: card_cvc,
+                country: country
             },
             billing_details: {
                 address: {
@@ -103,7 +104,7 @@ router.post('/registerAndSubscribe', async (req, res) => {
             },
         });
 
-        //create a costumer
+        //create a customer
         const customer = await stripe.customers.create({
             name: name,
             email: email,
@@ -116,7 +117,6 @@ router.post('/registerAndSubscribe', async (req, res) => {
         //create subscription
         const subscription = await stripe.subscriptions.create({
             customer: customer.id,
-            trial_period_days: 15,
             items: [
                 { price: plan_id },
             ],
@@ -356,7 +356,6 @@ router.post('/subscribe', async (req, res) => {
         //create subscription
         const subscription = await stripe.subscriptions.create({
             customer: customer.id,
-            trial_period_days: 15,
             items: [
                 { price: 'price_1In5oRIoqiuDenozaQ0lNzeP' }, // plan id
             ],
@@ -410,11 +409,12 @@ router.post('/reactivateSubscription', async (req, res) => {
 })
 
 router.get('/costumer', async (req, res) => {
-    const { subscription_id } = req.body;
+    const { customer_id } = req.query;
+    
 
     try {
         const customer = await stripe.customers.retrieve(
-            subscription_id
+            customer_id
         );
 
         return res.send({ customer })
@@ -434,26 +434,6 @@ router.get('/subscription', async (req, res) => {
         return res.status(400).send({ error: `Falha ao buscar assinatura ${error}` })
     }
 })
-
-router.post('/stripe', async (req, res) => {
-    try {
-        const plan = await stripe.plans.retrieve(
-            'price_1In4KILYdosYlTSeq3fQoLLy'
-        );
-
-        /*const result = await stripe.paymentIntents.create({
-            amount: 1000,
-            currency: 'brl',
-            payment_method_types: ['card'],
-            receipt_email: 'jenny.rosen@example.com',
-        });*/
-
-        return res.send({ plan })
-    } catch (error) {
-        return res.status(400).send({ error: error })
-    }
-})
-
 
 const transporter = nodemailer.createTransport({
     host: SMTP_CONFIG.host,
