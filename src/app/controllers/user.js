@@ -87,8 +87,7 @@ router.post('/registerAndSubscribe', async (req, res) => {
                 number: card_number,
                 exp_month: card_exp_month,
                 exp_year: card_exp_year,
-                cvc: card_cvc,
-                country: country
+                cvc: card_cvc
             },
             billing_details: {
                 address: {
@@ -117,11 +116,14 @@ router.post('/registerAndSubscribe', async (req, res) => {
         //create subscription
         const subscription = await stripe.subscriptions.create({
             customer: customer.id,
+            default_payment_method: paymentMethod.id,
             items: [
                 { price: plan_id },
             ],
         });
- 
+
+        console.log(subscription);
+
         user = await User.create({
             ...req.body,
             session_id: session_id,
@@ -173,7 +175,7 @@ router.post('/login', async (req, res) => {
 router.post('/update', async (req, res) => {
     const { email, user } = req.body;
 
-    try{
+    try {
         await User.findOneAndUpdate({ email }, { ...user })
         const updatedUser = await User.findOne({ email })
 
@@ -181,15 +183,15 @@ router.post('/update', async (req, res) => {
             token: generateToken({ user: updatedUser }),
         });
 
-    }catch(error){
+    } catch (error) {
         return res.status(400).send({ error: error });
     }
 })
 
 router.post('/updatePassword', async (req, res) => {
     const { email, newPassword } = req.body;
-    
-    try{
+
+    try {
         let user = await User.findOne({ email }).select('+password');
 
         if (!user)
@@ -207,7 +209,7 @@ router.post('/updatePassword', async (req, res) => {
             token: generateToken({ user: updatedUser }),
         });
 
-    }catch(error){
+    } catch (error) {
         return res.status(400).send({ error: `Erro ao atualizar senhas ${error}` });
     }
 })
@@ -410,7 +412,7 @@ router.post('/reactivateSubscription', async (req, res) => {
 
 router.get('/costumer', async (req, res) => {
     const { customer_id } = req.query;
-    
+
 
     try {
         const customer = await stripe.customers.retrieve(
@@ -424,14 +426,30 @@ router.get('/costumer', async (req, res) => {
 })
 
 router.get('/subscription', async (req, res) => {
+    const { subscription_id } = req.query;
+
     try {
         const subscription = await stripe.subscriptions.retrieve(
-            'sub_JPviOLVPdWbRNE'
+            subscription_id
         );
 
         return res.send({ subscription })
     } catch (error) {
         return res.status(400).send({ error: `Falha ao buscar assinatura ${error}` })
+    }
+})
+
+router.get('/payment_methods', async (req, res) => {
+    const { payment_method_id } = req.query;
+
+    try {
+        const paymentMethod = await stripe.paymentMethods.retrieve(
+            payment_method_id
+        );
+
+        return res.send({ paymentMethod })
+    } catch (error) {
+        return res.status(400).send({ error: `Falha ao buscar método de pagamento ${error}` })
     }
 })
 
