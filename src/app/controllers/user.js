@@ -122,8 +122,6 @@ router.post('/registerAndSubscribe', async (req, res) => {
             ],
         });
 
-        console.log(subscription);
-
         user = await User.create({
             ...req.body,
             session_id: session_id,
