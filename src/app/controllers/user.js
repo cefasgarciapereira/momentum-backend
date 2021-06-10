@@ -453,6 +453,39 @@ router.get('/payment_methods', async (req, res) => {
     }
 })
 
+router.post('/cancel_subscription', async (req, res) => {
+    const { subscription_id } = req.body;
+
+    try {
+        await stripe.subscriptions.update(subscription_id, {cancel_at_period_end: true});
+
+        return res.send({ success: "ok" })
+    } catch (error) {
+        return res.status(400).send({ error: `Falha ao cancelar a assinatura ${error}` })
+    }
+})
+
+router.post('/reactivate_subscription', async (req, res) => {
+    const { subscription_id } = req.body;
+
+    try {
+        const subscription = await stripe.subscriptions.retrieve(subscription_id);
+
+        await stripe.subscriptions.update(subscription_id, {
+            cancel_at_period_end: false,
+            proration_behavior: 'create_prorations',
+            items: [{
+                id: subscription.items.data[0].id,
+                price: subscription.items.data[0].price.id,
+            }]
+        });
+
+        return res.send({ success: "ok" })
+    } catch (error) {
+        return res.status(400).send({ error: `Falha ao atualizar assinatura ${error}` })
+    }
+})
+
 const transporter = nodemailer.createTransport({
     host: SMTP_CONFIG.host,
     port: SMTP_CONFIG.port,
