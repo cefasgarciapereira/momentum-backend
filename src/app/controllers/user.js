@@ -455,7 +455,7 @@ router.post('/cancel_subscription', async (req, res) => {
     const { subscription_id } = req.body;
 
     try {
-        await stripe.subscriptions.update(subscription_id, {cancel_at_period_end: true});
+        await stripe.subscriptions.update(subscription_id, { cancel_at_period_end: true });
 
         return res.send({ success: "ok" })
     } catch (error) {
@@ -480,6 +480,27 @@ router.post('/reactivate_subscription', async (req, res) => {
 
         return res.send({ success: "ok" })
     } catch (error) {
+        return res.status(400).send({ error: `Falha ao reativar a assinatura ${error}` })
+    }
+})
+
+router.post('/change_plan', async (req, res) => {
+    const { subscription_id, price_id } = req.body;
+
+    try{
+        const subscription = await stripe.subscriptions.retrieve(subscription_id);
+    
+        stripe.subscriptions.update(subscription_id, {
+            cancel_at_period_end: false,
+            proration_behavior: 'create_prorations',
+            items: [{
+                id: subscription.items.data[0].id,
+                price: price_id,
+            }]
+        });
+
+        return res.send({ subscription })
+    }catch(error){
         return res.status(400).send({ error: `Falha ao atualizar assinatura ${error}` })
     }
 })
