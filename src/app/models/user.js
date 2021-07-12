@@ -12,33 +12,49 @@ const UserSchema = new mongoose.Schema({
         required: true,
         lowercase: true
     },
-    password:{
+    is_closefriends: {
+        type: Boolean,
+        default: false
+    },
+    subscription_id: {
+        type: String,
+        default: null
+    },
+    customer_id: {
+        type: String,
+        default: null
+    },
+    payment_method_id: {
+        type: String,
+        default: null
+    },
+    password: {
         type: String,
         required: true,
         select: false
     },
-    session_id:{
+    session_id: {
         type: String,
         required: true,
         default: ''
     },
-    refresh_token:{
+    refresh_token: {
         type: String,
         required: true,
         default: ''
     },
-    welcome_message:{
+    welcome_message: {
         type: Boolean,
         required: true,
         default: true
     },
-    createdAt:{
+    createdAt: {
         type: Date,
         default: Date.now,
     }
 });
 
-UserSchema.pre('save', async function(next){
+UserSchema.pre('save', async function (next) {
     const hash = await bcrypt.hash(this.password, 10);
     this.password = hash;
     next();

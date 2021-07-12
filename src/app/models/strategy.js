@@ -26,7 +26,7 @@ const StrategySchema = new mongoose.Schema({
     hour:{
         type: String,
     }
-},{collection: 'strategies_records_v2'});
+},{collection: 'strategies'});
 
 const Strategy = mongoose.model('Strategy', StrategySchema);
 module.exports = Strategy;
