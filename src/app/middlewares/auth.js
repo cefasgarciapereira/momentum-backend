@@ -18,6 +18,8 @@ module.exports = (req, res, next) => {
         '/refreshToken',
         '/close-friends/add'
     ]
+    
+    console.log('PATH',req.path)
 
     if (nonSecurePaths.includes(req.path))
         return next();
