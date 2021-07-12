@@ -7,20 +7,6 @@ const router = express.Router();
 router.use('/', authMiddleware);
 
 router.post('/add', async (req, res) => {
-    const { instagram_at } = req.body;
-
-    try {
-        if (await CloseFriends.findOne({ instagram_at }))
-            return res.status(400).send({ error: 'Este perfil já foi incluído na lista.' });
-
-        const friend = await CloseFriends.create({ ...req.body });
-        return res.send({ friend });
-    } catch (error) {
-        return res.status(400).send({ error: `Falha ao incluir close friend: ${error.message}` });
-    }
-});
-
-router.post('/add', async (req, res) => {
     const { instagram_at, pass } = req.body;
 
 
