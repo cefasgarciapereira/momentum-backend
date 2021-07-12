@@ -120,6 +120,7 @@ router.post('/registerAndSubscribe', async (req, res) => {
             items: [
                 { price: plan_id },
             ],
+            trial_period_days: 7
         });
 
         user = await User.create({
