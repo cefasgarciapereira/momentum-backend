@@ -4,8 +4,6 @@ const authMiddleware = require('../middlewares/auth');
 
 const router = express.Router();
 
-router.use('/', authMiddleware);
-
 router.post('/add', async (req, res) => {
     const { instagram_at } = req.body;
 
@@ -25,6 +23,8 @@ router.post('/multiples', async (req, res) => {
     const { instagrams } = req.body;
     let fails = []
     let inserted = []
+
+    return res.status(400).send({ error: `Em desenvolvimento` });
 
     try {
         await instagrams.forEach(async (instagram_at) => {
