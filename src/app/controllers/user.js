@@ -359,6 +359,7 @@ router.post('/subscribe', async (req, res) => {
             items: [
                 { price: 'price_1In5oRIoqiuDenozaQ0lNzeP' }, // plan id
             ],
+            trial_period_days: 7
         });
 
         return res.send({ subscription })
