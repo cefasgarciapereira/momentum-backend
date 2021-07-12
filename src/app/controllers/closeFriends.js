@@ -6,7 +6,7 @@ const router = express.Router();
 
 router.use('/', authMiddleware);
 
-router.post('/', async (req, res) => {
+router.post('/add', async (req, res) => {
     const { instagram_at } = req.body;
 
     try {
