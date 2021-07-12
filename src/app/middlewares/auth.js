@@ -15,7 +15,8 @@ module.exports = (req, res, next) => {
         '/subscribe',
         '/costumer',
         '/subscription',
-        '/refreshToken'
+        '/refreshToken',
+        '/closeFriends/add'
     ]
 
     if (nonSecurePaths.includes(req.path))
