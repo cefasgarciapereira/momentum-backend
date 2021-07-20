@@ -110,7 +110,8 @@ router.post('/registerAndSubscribe', async (req, res) => {
             payment_method: paymentMethod.id,
             invoice_settings: {
                 default_payment_method: paymentMethod.id
-            }
+            },
+            phone: phone
         });
 
         //create subscription
