@@ -317,8 +317,10 @@ router.post('/resetPassword', async (req, res) => {
             if (err) return res.status(401).send({ error: 'Token inválido' });
         });
 
+        const hash = await bcrypt.hash(newPassword, 10);
+
         await User.findOneAndUpdate({ email }, {
-            password: newPassword
+            password: hash
         })
 
         return res.send({ success: "Senha alterada com sucesso" })
