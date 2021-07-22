@@ -39,7 +39,8 @@ router.post('/registerWithCloseFriends', async (req, res) => {
             ...req.body,
             session_id: session_id,
             refresh_token: generateRefreshToken({ email: email }),
-            is_closefriends: true
+            is_closefriends: true,
+            active: true
         });
 
         return res.send({
@@ -130,7 +131,8 @@ router.post('/registerAndSubscribe', async (req, res) => {
             refresh_token: refresh_token,
             payment_method_id: paymentMethod.id,
             customer_id: customer.id,
-            subscription_id: subscription.id
+            subscription_id: subscription.id,
+            active: true
         });
 
         return res.send({
@@ -162,8 +164,11 @@ router.post('/login', async (req, res) => {
             session_id: session_id
         })
 
+        const active = await isUserActive(user)
+
         user.password = undefined;
         user.session_id = session_id;
+        user._doc.active = active
         res.send({
             token: generateToken({ user: user }),
         });
@@ -234,12 +239,14 @@ router.post('/refreshToken', async (req, res) => {
     const { user } = req.body;
     const { refresh_token } = user;
 
+    let newUser = { ...user, active: await isUserActive(user) }
+
     try {
         jwt.verify(refresh_token, authConfig.refresh, (err, decoded) => {
             if (err) return res.status(401).send({ error: 'Token inválido' });
 
             res.send({
-                token: generateToken({ user: user }),
+                token: generateToken({ user: newUser }),
             });
         });
     } catch (error) {
@@ -414,7 +421,6 @@ router.post('/reactivateSubscription', async (req, res) => {
 router.get('/costumer', async (req, res) => {
     const { customer_id } = req.query;
 
-
     try {
         const customer = await stripe.customers.retrieve(
             customer_id
@@ -490,9 +496,9 @@ router.post('/reactivate_subscription', async (req, res) => {
 router.post('/change_plan', async (req, res) => {
     const { subscription_id, price_id } = req.body;
 
-    try{
+    try {
         const subscription = await stripe.subscriptions.retrieve(subscription_id);
-    
+
         stripe.subscriptions.update(subscription_id, {
             cancel_at_period_end: false,
             proration_behavior: 'create_prorations',
@@ -503,7 +509,7 @@ router.post('/change_plan', async (req, res) => {
         });
 
         return res.send({ subscription })
-    }catch(error){
+    } catch (error) {
         return res.status(400).send({ error: `Falha ao atualizar assinatura ${error}` })
     }
 })
@@ -530,6 +536,19 @@ async function send({ to, text, subject }) {
     })
 
     return mailSent
+}
+
+async function isUserActive(user) {
+    if (user.is_closefriends) {
+        return true
+    }
+
+    if (user.subscription_id) {
+        const subscription = await stripe.subscriptions.retrieve(user.subscription_id);
+        return subscription.status === 'active' || 'trialing' ? true : false
+    }
+
+    return false
 }
 
 function generateToken(params = {}) {
