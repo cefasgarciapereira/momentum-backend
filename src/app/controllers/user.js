@@ -112,7 +112,14 @@ router.post('/registerAndSubscribe', async (req, res) => {
             invoice_settings: {
                 default_payment_method: paymentMethod.id
             },
-            phone: phone
+            phone: phone,
+            address: {
+                city: city,
+                country: country,
+                line1: line,
+                postal_code: postal_code,
+                state: state
+            }
         });
 
         //create subscription
@@ -519,22 +526,20 @@ router.post('/change_plan', async (req, res) => {
 router.post('/edit_credit_card', async (req, res) => {
     const {
         customer_id,
-        email,
+        payment_method_id,
         card_name,
         card_number,
         card_exp_month,
         card_exp_year,
         card_cvc,
-        city,
-        country,
-        line,
-        state,
-        phone,
-        postal_code
     } = req.body;
 
     try {
-        //create payment method
+
+        // retrieve current payment method
+        const currentPaymentMethod = await stripe.paymentMethods.retrieve(payment_method_id)
+
+        //create new payment method
         const paymentMethod = await stripe.paymentMethods.create({
             type: 'card',
             card: {
@@ -543,26 +548,21 @@ router.post('/edit_credit_card', async (req, res) => {
                 exp_year: card_exp_year,
                 cvc: card_cvc
             },
+
             billing_details: {
-                address: {
-                    city: city,
-                    country: country,
-                    line1: line,
-                    postal_code: postal_code,
-                    state: state
-                },
-                email: email,
-                name: card_name,
-                phone: phone
-            },
+                ...currentPaymentMethod.billing_details,
+                name: card_name
+            }
+
         });
 
-
+        // attach new payment method to the customer
         await stripe.paymentMethods.attach(
             paymentMethod.id,
             { customer: customer_id }
         );
 
+        // update customer with new default payment method
         const customer = await stripe.customers.update(
             customer_id,
             { invoice_settings: { default_payment_method: paymentMethod.id } }
