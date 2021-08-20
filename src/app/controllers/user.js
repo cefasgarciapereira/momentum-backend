@@ -516,6 +516,64 @@ router.post('/change_plan', async (req, res) => {
     }
 })
 
+router.post('/edit_credit_card', async (req, res) => {
+    const {
+        payment_method_id,
+        customer_id,
+        email,
+        card_name,
+        card_number,
+        card_exp_month,
+        card_exp_year,
+        card_cvc,
+        city,
+        country,
+        line,
+        state,
+        phone,
+        postal_code
+    } = req.body;
+
+    try {
+        //create payment method
+        const paymentMethod = await stripe.paymentMethods.create({
+            type: 'card',
+            card: {
+                number: card_number,
+                exp_month: card_exp_month,
+                exp_year: card_exp_year,
+                cvc: card_cvc
+            },
+            billing_details: {
+                address: {
+                    city: city,
+                    country: country,
+                    line1: line,
+                    postal_code: postal_code,
+                    state: state
+                },
+                email: email,
+                name: card_name,
+                phone: phone
+            },
+        });
+
+        const customer = await stripe.customers.update(
+            customer_id,
+            {
+                invoice_settings: {
+                    default_payment_method: payment_method_id
+                },
+            }
+        );
+
+        return res.send({ customer })
+    }
+    catch (error) {
+        return res.status(400).send({ error: `Falha ao atualizar forma de pagamento: ${error.message}` })
+    }
+})
+
 const transporter = nodemailer.createTransport({
     host: SMTP_CONFIG.host,
     port: SMTP_CONFIG.port,
