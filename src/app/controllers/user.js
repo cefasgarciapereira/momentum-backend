@@ -557,14 +557,18 @@ router.post('/edit_credit_card', async (req, res) => {
             },
         });
 
-        console.log(paymentMethod)
 
-        const attachedPaymentMethod = await stripe.paymentMethods.attach(
+        await stripe.paymentMethods.attach(
             paymentMethod.id,
             { customer: customer_id }
         );
 
-        return res.send({ attachedPaymentMethod })
+        const customer = await stripe.customers.update(
+            customer_id,
+            { invoice_settings: { default_payment_method: paymentMethod.id } }
+        );
+
+        return res.send({ customer })
     }
     catch (error) {
         return res.status(400).send({ error: `Falha ao atualizar forma de pagamento: ${error.message}` })
