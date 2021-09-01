@@ -529,12 +529,13 @@ router.post('/edit_credit_card', async (req, res) => {
         payment_method_id,
         card_name,
         card_number,
-        card_exp_month,
-        card_exp_year,
+        card_expiry,
         card_cvc,
     } = req.body;
 
     try {
+        card_exp_month = card_expiry.split('/')[0]
+        card_exp_year = card_expiry.split('/')[1]
 
         // retrieve current payment method
         const currentPaymentMethod = await stripe.paymentMethods.retrieve(payment_method_id)
