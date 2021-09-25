@@ -71,7 +71,8 @@ router.post('/registerAndSubscribe', async (req, res) => {
         line,
         state,
         phone,
-        postal_code
+        postal_code,
+        coupon
     } = req.body;
 
     try {
@@ -129,7 +130,8 @@ router.post('/registerAndSubscribe', async (req, res) => {
             items: [
                 { price: plan_id },
             ],
-            trial_period_days: 7
+            trial_period_days: 7,
+            coupon: coupon,
         });
 
         user = await User.create({
@@ -149,7 +151,12 @@ router.post('/registerAndSubscribe', async (req, res) => {
         });
 
     } catch (error) {
-        return res.status(400).send({ error: `Falha no cadastro: ${error.message}` });
+
+        if (error.message.includes("No such coupon")) {
+            return res.status(400).send({ error: `Falha no cadastro: cupom inválido` })
+        }
+
+        return res.status(400).send({ error: `Falha no cadastro (${error.name}): ${error.message}` });
     }
 });
 
@@ -573,6 +580,23 @@ router.post('/edit_credit_card', async (req, res) => {
     }
     catch (error) {
         return res.status(400).send({ error: `Falha ao atualizar forma de pagamento: ${error.message}` })
+    }
+})
+
+router.post('/search-coupon', async (req, res) => {
+    const {
+        coupon
+    } = req.body;
+
+    try {
+        const res_coupon = await stripe.coupons.retrieve(
+            coupon
+        );
+
+        return res.send({ res_coupon })
+    }
+    catch (error) {
+        return res.status(400).send({ error: `Cupon inválido` })
     }
 })
 
