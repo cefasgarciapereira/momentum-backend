@@ -583,6 +583,23 @@ router.post('/edit_credit_card', async (req, res) => {
     }
 })
 
+router.post('/search-coupon', async (req, res) => {
+    const {
+        coupon
+    } = req.body;
+
+    try {
+        const res_coupon = await stripe.coupons.retrieve(
+            coupon
+        );
+
+        return res.send({ res_coupon })
+    }
+    catch (error) {
+        return res.status(400).send({ error: `Cupon inválido` })
+    }
+})
+
 const transporter = nodemailer.createTransport({
     host: SMTP_CONFIG.host,
     port: SMTP_CONFIG.port,
