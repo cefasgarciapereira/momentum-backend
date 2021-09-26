@@ -10,8 +10,8 @@ if (process.env.SERVER_ENV === 'DEV') {
   var allowedOrigins = [
     'https://www.easyquant.com.br',
     'http://www.easyquant.com.br',
-    'https://homolog-easyquant.netlify.app/',
-    'http://homolog-easyquant.netlify.app/'
+    'https://homolog-easyquant.netlify.app',
+    'http://homolog-easyquant.netlify.app'
   ];
 
 }
