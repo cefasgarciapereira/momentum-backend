@@ -56,7 +56,7 @@ router.post('/registerWithCloseFriends', async (req, res) => {
     }
 });
 
-router.post('/registerAndSubscribe', async (req, res) => {
+/*router.post('/registerAndSubscribe', async (req, res) => {
     const {
         email,
         name,
@@ -158,7 +158,7 @@ router.post('/registerAndSubscribe', async (req, res) => {
 
         return res.status(400).send({ error: `Falha no cadastro (${error.name}): ${error.message}` });
     }
-});
+});*/
 
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
