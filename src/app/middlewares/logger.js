@@ -9,14 +9,15 @@ module.exports = async (req, res, next) => {
 
     const date = new Date();
 
-    const log = {
+    let log = {
         url: req.path,
         method: req.method,
         params: req.params,
-        body: req.body,
+        body: { ...req.body, password: '**********' },
         ip: req.headers['x-forwarded-for']?.split(',').shift() || req.socket?.remoteAddress,
         time: `${date.toLocaleDateString('pt-BR')} ${date.toLocaleTimeString('pt-BR')}`
     }
+
     try {
         await Log.create(log)
         return next();
