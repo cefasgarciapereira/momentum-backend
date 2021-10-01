@@ -5,6 +5,7 @@ const CloseFriends = require('../models/closeFriends.js');
 const jwt = require('jsonwebtoken');
 const authConfig = require('../../config/auth.json');
 const authMiddleware = require('../middlewares/auth');
+const loggerMiddleware = require('../middlewares/logger');
 const nodemailer = require('nodemailer');
 const SMTP_CONFIG = require('../../config/smtp');
 const stripe = require('../services/stripe');
@@ -12,6 +13,7 @@ const stripe = require('../services/stripe');
 const router = express.Router();
 
 router.use('/', authMiddleware);
+router.use('/', loggerMiddleware);
 
 router.post('/registerWithCloseFriends', async (req, res) => {
     const { email, instagram_at } = req.body;
