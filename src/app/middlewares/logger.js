@@ -1,7 +1,14 @@
 const Log = require('../models/log');
 
 module.exports = async (req, res, next) => {
-    const pathsToLog = ['/login']
+    const pathsToLog = [
+        '/registerWithCloseFriends',
+        '/registerAndSubscribe',
+        '/login',
+        '/update',
+        '/reactivate_subscription',
+        '/change_plan'
+    ]
 
     if (!pathsToLog.includes(req.path)) {
         return next();
