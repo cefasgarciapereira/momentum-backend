@@ -15,7 +15,7 @@ module.exports = async (req, res, next) => {
     }
 
     const date = new Date();
-    const origin = req.headers.host || req.headers.origin || req.headers.hostname;
+    const ref = req.header('Referer') || 'undefined';
 
     let log = {
         url: req.path,
@@ -24,7 +24,7 @@ module.exports = async (req, res, next) => {
         body: { ...req.body, password: '**********', password_confirmation: '**********' },
         ip: req.headers['x-forwarded-for']?.split(',').shift() || req.socket?.remoteAddress,
         time: `${date.toLocaleDateString('pt-BR')} ${date.toLocaleTimeString('pt-BR')}`,
-        origin: `${origin}`,
+        origin: `${ref}`,
     }
 
     try {

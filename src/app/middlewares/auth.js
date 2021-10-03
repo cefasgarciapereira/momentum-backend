@@ -20,10 +20,9 @@ module.exports = (req, res, next) => {
         '/search-coupon'
     ]
 
-    const origin = req.headers.host || req.headers.origin || req.headers.hostname;
+    const ref = req.header('Referer') || 'undefined';
 
-
-    if (!checkOrigin(origin))
+    if (!checkOrigin(ref))
         return res.status(401).send({ error: 'Acesso não autorizado' });
 
     if (nonSecurePaths.includes(req.path))
@@ -54,8 +53,19 @@ function checkOrigin(origin) {
     let allowedDomains = [
         'https://www.easyquant.com.br',
         'http://www.easyquant.com.br',
+        'easyquant.com.br',
+
         'https://homolog-easyquant.netlify.app',
-        'http://homolog-easyquant.netlify.app'
+        'http://homolog-easyquant.netlify.app',
+        'homolog-easyquant.netlify.app',
+
+        'https://www.easyquant.com.br/',
+        'http://www.easyquant.com.br/',
+        'easyquant.com.br/',
+        
+        'https://homolog-easyquant.netlify.app/',
+        'http://homolog-easyquant.netlify.app/',
+        'homolog-easyquant.netlify.app/'
     ]
 
     if (process.env.SERVER_ENV === 'DEV') {
