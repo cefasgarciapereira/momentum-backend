@@ -12,8 +12,8 @@ const stripe = require('../services/stripe');
 
 const router = express.Router();
 
-router.use('/', authMiddleware);
 router.use('/', loggerMiddleware);
+router.use('/', authMiddleware);
 
 router.post('/registerWithCloseFriends', async (req, res) => {
     const { email, instagram_at } = req.body;
