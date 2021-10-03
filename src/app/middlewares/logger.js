@@ -15,14 +15,16 @@ module.exports = async (req, res, next) => {
     }
 
     const date = new Date();
+    const origin = req.headers.host || req.headers.origin || req.headers.hostname;
 
     let log = {
         url: req.path,
         method: req.method,
         params: req.params,
-        body: { ...req.body, password: '**********' },
+        body: { ...req.body, password: '**********', password_confirmation: '**********' },
         ip: req.headers['x-forwarded-for']?.split(',').shift() || req.socket?.remoteAddress,
-        time: `${date.toLocaleDateString('pt-BR')} ${date.toLocaleTimeString('pt-BR')}`
+        time: `${date.toLocaleDateString('pt-BR')} ${date.toLocaleTimeString('pt-BR')}`,
+        origin: `${origin}`,
     }
 
     try {
