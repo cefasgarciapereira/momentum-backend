@@ -54,9 +54,18 @@ function checkOrigin(origin) {
         'https://www.easyquant.com.br',
         'http://www.easyquant.com.br',
         'easyquant.com.br',
+
         'https://homolog-easyquant.netlify.app',
         'http://homolog-easyquant.netlify.app',
-        'homolog-easyquant.netlify.app'
+        'homolog-easyquant.netlify.app',
+
+        'https://www.easyquant.com.br/',
+        'http://www.easyquant.com.br/',
+        'easyquant.com.br/',
+        
+        'https://homolog-easyquant.netlify.app/',
+        'http://homolog-easyquant.netlify.app/',
+        'homolog-easyquant.netlify.app/'
     ]
 
     if (process.env.SERVER_ENV === 'DEV') {
