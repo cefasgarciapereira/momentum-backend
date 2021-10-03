@@ -15,6 +15,9 @@ const ApiLogSchema = new mongoose.Schema({
     body: {
         type: Object
     },
+    origin: {
+        type: String
+    },
     ip: {
         type: String,
         required: true,
