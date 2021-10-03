@@ -19,6 +19,13 @@ module.exports = (req, res, next) => {
         '/close-friends/add',
         '/search-coupon'
     ]
+
+    const origin = req.headers.host || req.headers.origin || req.headers.hostname;
+
+
+    if (!checkOrigin(origin))
+        return res.status(401).send({ error: 'Acesso não autorizado' });
+
     if (nonSecurePaths.includes(req.path))
         return next();
 
@@ -42,3 +49,23 @@ module.exports = (req, res, next) => {
         return next();
     });
 };
+
+function checkOrigin(origin) {
+    let allowedDomains = [
+        'https://www.easyquant.com.br',
+        'http://www.easyquant.com.br',
+        'https://homolog-easyquant.netlify.app',
+        'http://homolog-easyquant.netlify.app'
+    ]
+
+    if (process.env.SERVER_ENV === 'DEV') {
+        allowedDomains.push('localhost:9000')
+    }
+
+    if (allowedDomains.includes(origin)) {
+        return true;
+    } else {
+        return false;
+    }
+
+}
