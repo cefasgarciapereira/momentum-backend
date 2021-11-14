@@ -411,6 +411,7 @@ router.post('/cancelSubscription', async (req, res) => {
     }
 })
 
+
 router.post('/reactivateSubscription', async (req, res) => {
     const { subscription_id, plan_id } = req.body;
 
@@ -433,6 +434,44 @@ router.post('/reactivateSubscription', async (req, res) => {
 
     } catch (error) {
         return res.status(400).send({ error: `Falha ao cancelar assinatura ${error}` })
+    }
+})
+
+router.post('/pauseSubscription', async (req, res) => {
+    const { subscription_id } = req.body;
+
+    try {
+        const subscription = await stripe.subscriptions.retrieve(subscription_id);
+
+        stripe.subscriptions.update(subscription_id, {
+            cancel_at_period_end: false,
+            proration_behavior: 'create_prorations',
+            items: [{
+                id: subscription.items.data[0].id,
+                price: 'price_1Jva8RIoqiuDenozACyPyvgA',
+            }]
+        });
+
+        return res.send({ subscription })
+    } catch (error) {
+        return res.status(400).send({ error: `Falha ao pausar assinatura ${error}` })
+    }
+})
+
+router.post('/unpauseSubscription', async (req, res) => {
+    const { subscription_id } = req.body;
+
+    try {
+        const paused = await stripe.subscriptions.update(
+            subscription_id,
+            {
+                pause_collection: ''
+            }
+        );
+
+        return res.send({ paused })
+    } catch (error) {
+        return res.status(400).send({ error: `Falha ao pausar assinatura ${error}` })
     }
 })
 
@@ -575,11 +614,24 @@ router.post('/edit_credit_card', async (req, res) => {
         // update customer with new default payment method
         const customer = await stripe.customers.update(
             customer_id,
-            { invoice_settings: { default_payment_method: paymentMethod.id } }
+            {
+                invoice_settings: { default_payment_method: paymentMethod.id },
+                expand: ['subscriptions']
+            },
         );
+
+
+        // update subscription with new default payment method
+        const subscription = await stripe.subscriptions.update(
+            customer.subscriptions.data[0].id,
+            {
+                default_payment_method: paymentMethod.id
+            }
+        )
 
         return res.send({ customer })
     }
+
     catch (error) {
         return res.status(400).send({ error: `Falha ao atualizar forma de pagamento: ${error.message}` })
     }
