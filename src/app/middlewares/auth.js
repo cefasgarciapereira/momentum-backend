@@ -22,7 +22,7 @@ module.exports = (req, res, next) => {
 
     const ref = req.header('Referer') || 'undefined';
 
-    if (!checkOrigin(ref))
+    if (!checkOrigin(ref) && process.env.SERVER_ENV !== 'DEV')
         return res.status(401).send({ error: 'Acesso não autorizado' });
 
     if (nonSecurePaths.includes(req.path))
@@ -62,15 +62,11 @@ function checkOrigin(origin) {
         'https://www.easyquant.com.br/',
         'http://www.easyquant.com.br/',
         'easyquant.com.br/',
-        
+
         'https://homolog-easyquant.netlify.app/',
         'http://homolog-easyquant.netlify.app/',
         'homolog-easyquant.netlify.app/'
     ]
-
-    if (process.env.SERVER_ENV === 'DEV') {
-        allowedDomains.push('localhost:9000')
-    }
 
     if (allowedDomains.includes(origin)) {
         return true;
