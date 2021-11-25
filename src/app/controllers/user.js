@@ -448,7 +448,7 @@ router.post('/pauseSubscription', async (req, res) => {
             proration_behavior: 'create_prorations',
             items: [{
                 id: subscription.items.data[0].id,
-                price: 'price_1Jva8RIoqiuDenozACyPyvgA',
+                price: process.env.SERVER_ENV === 'PROD' ? 'price_1JwtLRIoqiuDenozon5WVkeT' : 'price_1Jva8RIoqiuDenozACyPyvgA',
             }]
         });
 
