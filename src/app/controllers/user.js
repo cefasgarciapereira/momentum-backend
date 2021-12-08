@@ -685,8 +685,7 @@ async function isUserActive(user) {
 
     if (user.subscription_id) {
         const subscription = await stripe.subscriptions.retrieve(user.subscription_id);
-        const status = subscription.status
-        return (status === 'active' || status === 'trialing') ? true : false
+        return (subscription?.plan?.amount !== 0) ? true : false
     }
 
     return false
