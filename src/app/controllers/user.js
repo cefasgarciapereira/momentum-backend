@@ -674,7 +674,6 @@ async function send({ to, text, subject }) {
         from: "Easy Quant <contato@easyquant.com.br>",
         to: [to]
     })
-
     return mailSent
 }
 
