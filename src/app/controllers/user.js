@@ -674,22 +674,29 @@ async function send({ to, text, subject }) {
         from: "Easy Quant <contato@easyquant.com.br>",
         to: [to]
     })
-
     return mailSent
 }
 
 async function isUserActive(user) {
-    if (user.is_closefriends) {
-        return true
-    }
+    try {
+        if (user.is_closefriends) {
+            return true
+        }
 
-    if (user.subscription_id) {
-        const subscription = await stripe.subscriptions.retrieve(user.subscription_id);
-        const status = subscription.status
-        return (status === 'active' || status === 'trialing') ? true : false
+        if (user.subscription_id) {
+            const subscription = await stripe.subscriptions.retrieve(user.subscription_id);
+            const timestamp = subscription.current_period_start * 1000
+            const end_date = new Date(timestamp)
+            const today = new Date()
+            const timeDiff = end_date.getTime() - today.getTime()
+            const dayDiff = timeDiff / (1000 * 3600 * 24)
+            const isExpired = dayDiff > 30 ? true : false
+            return ((subscription?.plan?.amount === 0) && isExpired) ? false : true
+        }
+        return false
+    } catch (err) {
+        return false
     }
-
-    return false
 }
 
 function generateToken(params = {}) {
