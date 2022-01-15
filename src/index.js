@@ -4,7 +4,7 @@ const cors = require('cors');
 const app = express();
 require('dotenv/config');
 
-if (process.env.SERVER_ENV === 'DEV') {
+if (process.env.SERVER_ENV === 'DEV' || process.env.SERVER_ENV === 'HOMOLOG') {
   var allowedOrigins = ['http://localhost:3000'];
 } else {
   var allowedOrigins = [
